@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --twitch-purple: #9146FF;
+  --twitch-dark: #0e0e10;
+  --twitch-gray: #18181b;
+  --twitch-light: #efeff1;
+}
+
+body {
+  background-color: var(--twitch-dark);
+  color: white;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { 
+    box-shadow: 0 0 0 2px #ef4444, 0 0 20px rgba(239, 68, 68, 0.4); 
+  }
+  50% { 
+    box-shadow: 0 0 0 3px #ef4444, 0 0 35px rgba(239, 68, 68, 0.6); 
+  }
+}
+
+.live-glow {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.gradient-overlay {
+  background: linear-gradient(to bottom, transparent 0%, rgba(14, 14, 16, 0.8) 100%);
+}
