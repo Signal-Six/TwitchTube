@@ -1,0 +1,39 @@
+14:14:13.776 Running build in Portland, USA (West) – pdx1
+14:14:13.778 Build machine configuration: 2 cores, 8 GB
+14:14:14.013 Cloning github.com/Signal-Six/TwitchTube (Branch: main, Commit: 4706140)
+14:14:15.144 Cloning completed: 1.131s
+14:14:15.606 Restored build cache from previous deployment (7Ufmo2LJAfxkErKxnnKhhRKrqddP)
+14:14:16.332 Running "vercel build"
+14:14:16.879 Vercel CLI 50.18.2
+14:14:17.265 Installing dependencies...
+14:14:18.423 
+14:14:18.424 up to date in 932ms
+14:14:18.424 
+14:14:18.425 150 packages are looking for funding
+14:14:18.425   run `npm fund` for details
+14:14:18.453 Detected Next.js version: 14.2.3
+14:14:18.457 Running "npm run build"
+14:14:18.552 
+14:14:18.553 > twitchtube@1.0.0 build
+14:14:18.553 > next build
+14:14:18.553 
+14:14:19.245   ▲ Next.js 14.2.3
+14:14:19.246 
+14:14:19.267    Creating an optimized production build ...
+14:14:25.531  ✓ Compiled successfully
+14:14:25.532    Linting and checking validity of types ...
+14:14:28.534 Failed to compile.
+14:14:28.534 
+14:14:28.535 ./src/app/page.tsx:318:17
+14:14:28.536 Type error: Type 'import("/vercel/path0/src/types/index").FollowedChannel[] | undefined' is not assignable to type 'FollowedChannel[] | undefined'.
+14:14:28.536   Type 'import("/vercel/path0/src/types/index").FollowedChannel[]' is not assignable to type 'FollowedChannel[]'.
+14:14:28.536     Property 'profile_image_url' is missing in type 'import("/vercel/path0/src/types/index").FollowedChannel' but required in type 'FollowedChannel'.
+14:14:28.536 
+14:14:28.536 [0m [90m 316 |[39m     [36mreturn[39m ([0m
+14:14:28.536 [0m [90m 317 |[39m       [33m<[39m[33mdiv[39m className[33m=[39m[32m"min-h-screen bg-twitch-dark"[39m[33m>[39m[0m
+14:14:28.537 [0m[31m[1m>[22m[39m[90m 318 |[39m         [33m<[39m[33mHeader[39m followedChannels[33m=[39m{followedData} [33m/[39m[33m>[39m[0m
+14:14:28.537 [0m [90m     |[39m                 [31m[1m^[22m[39m[0m
+14:14:28.537 [0m [90m 319 |[39m         [33m<[39m[33mdiv[39m className[33m=[39m[32m"flex flex-col items-center justify-center min-h-[calc(100vh-80px)] px-4"[39m[33m>[39m[0m
+14:14:28.537 [0m [90m 320 |[39m           [33m<[39m[33mdiv[39m className[33m=[39m[32m"text-center max-w-lg"[39m[33m>[39m[0m
+14:14:28.537 [0m [90m 321 |[39m             [33m<[39m[33mh1[39m className[33m=[39m[32m"text-4xl font-bold text-white mb-4"[39m[33m>[39m[33mWelcome[39m to [33mTwitchTube[39m[33m<[39m[33m/[39m[33mh1[39m[33m>[39m[0m
+14:14:28.585 Error: Command "npm run build" exited with 1

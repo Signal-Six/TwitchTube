@@ -10,6 +10,7 @@ export interface FollowedChannel {
   broadcaster_login: string;
   broadcaster_name: string;
   followed_at: string;
+  profile_image_url?: string;
 }
 
 export interface TwitchStream {
