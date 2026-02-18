@@ -29,6 +29,28 @@ interface VideosResponse {
   pagination: Record<string, string>;
 }
 
+interface SearchChannelResult {
+  broadcaster_id: string;
+  broadcaster_login: string;
+  display_name: string;
+  game_id: string;
+  game_name: string;
+  is_live: boolean;
+  thumbnail_url: string;
+  title: string;
+}
+
+interface SearchCategoryResult {
+  id: string;
+  name: string;
+  box_art_url: string;
+}
+
+interface SearchResultsResponse {
+  data: SearchChannelResult[] | SearchCategoryResult[];
+  pagination: string;
+}
+
 function VideoPlayerWithProgress({ 
   videoId, 
   onProgressUpdate 
@@ -65,22 +87,28 @@ function getWatchProgress(videoId: string): number {
   return progress ? parseFloat(progress) : 0;
 }
 
-function saveWatchProgress(videoId: string, progress: number): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(`watch_progress_${videoId}`, progress.toString());
-}
-
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<TwitchStream | TwitchVideo | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Followed content state
   const [videos, setVideos] = useState<TwitchVideo[]>([]);
   const [pagination, setPagination] = useState<Record<string, string>>({});
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  
+  // Search state
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchType, setSearchType] = useState<'channels' | 'categories'>('channels');
+  const [searchResults, setSearchResults] = useState<SearchChannelResult[] | SearchCategoryResult[]>([]);
+  const [searchPagination, setSearchPagination] = useState('');
+  const [searchHasMore, setSearchHasMore] = useState(true);
+  const [searchLoadingMore, setSearchLoadingMore] = useState(false);
+  
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -108,7 +136,7 @@ export default function Home() {
   );
 
   const { data: initialVideosData, error: videosError } = useSWR<VideosResponse>(
-    isAuthenticated && followedData ? 
+    isAuthenticated && followedData && !isSearching ? 
       `/api/videos?userId=${followedData.map(c => c.broadcaster_id).join(',')}&limit=25` : 
       null,
     fetcher,
@@ -137,18 +165,10 @@ export default function Home() {
     return Array.from(categoryMap.values());
   }, [streamsData]);
 
-  const filteredFollowed = useMemo(() => {
-    if (!followedData) return [];
-    if (!searchQuery) return followedData;
-    return followedData.filter(c => 
-      c.broadcaster_name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [followedData, searchQuery]);
-
   const liveStreams = useMemo(() => {
-    if (!streamsData || !filteredFollowed) return [];
+    if (!streamsData) return [];
     return streamsData;
-  }, [streamsData, filteredFollowed]);
+  }, [streamsData]);
 
   const videosWithProgress = useMemo(() => {
     return videos.map(v => ({
@@ -186,13 +206,73 @@ export default function Home() {
     }
   }, [loadingMore, hasMore, pagination, followedData]);
 
+  const handleSearch = useCallback(async (query: string, type: 'channels' | 'categories') => {
+    if (!query.trim()) return;
+    
+    setIsSearching(true);
+    setSearchQuery(query);
+    setSearchType(type);
+    setSearchResults([]);
+    setSearchPagination('');
+    setSearchHasMore(true);
+    
+    try {
+      const response = await fetch(
+        `/api/search?query=${encodeURIComponent(query)}&type=${type}&limit=25`
+      );
+      
+      if (response.ok) {
+        const data: SearchResultsResponse = await response.json();
+        setSearchResults(data.data);
+        setSearchPagination(data.pagination);
+        setSearchHasMore(!!data.pagination);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+    }
+  }, []);
+
+  const loadMoreSearchResults = useCallback(async () => {
+    if (searchLoadingMore || !searchHasMore || !searchQuery) return;
+    
+    setSearchLoadingMore(true);
+    
+    try {
+      const response = await fetch(
+        `/api/search?query=${encodeURIComponent(searchQuery)}&type=${searchType}&limit=25&cursor=${searchPagination}`
+      );
+      
+      if (response.ok) {
+        const data: SearchResultsResponse = await response.json();
+        setSearchResults(prev => [...prev, ...(data.data as any[])]);
+        setSearchPagination(data.pagination);
+        setSearchHasMore(!!data.pagination);
+      }
+    } catch (error) {
+      console.error('Error loading more search results:', error);
+    } finally {
+      setSearchLoadingMore(false);
+    }
+  }, [searchLoadingMore, searchHasMore, searchQuery, searchType, searchPagination]);
+
+  const clearSearch = useCallback(() => {
+    setIsSearching(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    setSearchPagination('');
+  }, []);
+
   useEffect(() => {
     if (!loadMoreRef.current) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore) {
-          loadMoreVideos();
+        if (entries[0].isIntersecting) {
+          if (isSearching) {
+            loadMoreSearchResults();
+          } else {
+            loadMoreVideos();
+          }
         }
       },
       { threshold: 0.1 }
@@ -201,7 +281,7 @@ export default function Home() {
     observer.observe(loadMoreRef.current);
 
     return () => observer.disconnect();
-  }, [loadMoreVideos, hasMore, loadingMore]);
+  }, [isSearching, loadMoreSearchResults, loadMoreVideos]);
 
   const handleVideoClick = (video: TwitchStream | TwitchVideo) => {
     setSelectedVideo(video);
@@ -235,7 +315,7 @@ export default function Home() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-twitch-dark">
-        <Header />
+        <Header followedChannels={followedData} />
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] px-4">
           <div className="text-center max-w-lg">
             <h1 className="text-4xl font-bold text-white mb-4">Welcome to TwitchTube</h1>
@@ -255,7 +335,11 @@ export default function Home() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-twitch-dark">
-        <Header onSearch={setSearchQuery} />
+        <Header 
+          onSearch={handleSearch} 
+          followedChannels={followedData}
+          searchType={searchType}
+        />
         <div className="flex items-center justify-center h-[calc(100vh-80px)]">
           <div className="text-white text-xl">Loading your content...</div>
         </div>
@@ -266,7 +350,11 @@ export default function Home() {
   if (hasError) {
     return (
       <div className="min-h-screen bg-twitch-dark">
-        <Header onSearch={setSearchQuery} />
+        <Header 
+          onSearch={handleSearch} 
+          followedChannels={followedData}
+          searchType={searchType}
+        />
         <div className="flex items-center justify-center h-[calc(100vh-80px)]">
           <div className="text-red-500 text-xl">Error loading content. Please try again.</div>
         </div>
@@ -276,25 +364,80 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-twitch-dark">
-      <Header onSearch={setSearchQuery} />
-      <CategoryTabs 
-        categories={categories} 
-        selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
+      <Header 
+        onSearch={handleSearch} 
+        followedChannels={followedData}
+        searchType={searchType}
       />
-      <StreamGrid
-        liveStreams={liveStreams}
-        videos={videosWithProgress}
-        selectedCategory={selectedCategory}
-        onVideoClick={handleVideoClick}
-      />
+      
+      {isSearching ? (
+        <div className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <button
+              onClick={clearSearch}
+              className="px-4 py-2 text-sm bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              ← Back to Followed
+            </button>
+            <h2 className="text-xl font-bold text-white">
+              Search Results for "{searchQuery}" 
+              <span className="text-gray-400 text-base font-normal ml-2">
+                ({searchType === 'channels' ? 'Channels' : 'Categories'})
+              </span>
+            </h2>
+          </div>
+          
+          {searchType === 'channels' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {(searchResults as SearchChannelResult[]).map(channel => (
+                <SearchChannelCard 
+                  key={channel.broadcaster_id} 
+                  channel={channel} 
+                  onClick={() => handleSearch(channel.display_name, 'channels')}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {(searchResults as SearchCategoryResult[]).map(category => (
+                <SearchCategoryCard 
+                  key={category.id} 
+                  category={category} 
+                  onClick={() => handleSearch(category.name, 'categories')}
+                />
+              ))}
+            </div>
+          )}
+          
+          {searchResults.length === 0 && (
+            <div className="text-gray-400 text-center py-8">No results found</div>
+          )}
+        </div>
+      ) : (
+        <>
+          <CategoryTabs 
+            categories={categories} 
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+          />
+          <StreamGrid
+            liveStreams={liveStreams}
+            videos={videosWithProgress}
+            selectedCategory={selectedCategory}
+            onVideoClick={handleVideoClick}
+          />
+        </>
+      )}
 
       <div ref={loadMoreRef} className="h-10 flex items-center justify-center">
-        {loadingMore && (
+        {(isSearching ? searchLoadingMore : loadingMore) && (
           <div className="text-gray-400">Loading more...</div>
         )}
-        {!hasMore && videos.length > 0 && (
+        {!isSearching && !hasMore && videos.length > 0 && (
           <div className="text-gray-500">No more VODs to load</div>
+        )}
+        {isSearching && !searchHasMore && searchResults.length > 0 && (
+          <div className="text-gray-500">No more results</div>
         )}
       </div>
 
@@ -333,6 +476,87 @@ export default function Home() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function SearchChannelCard({ 
+  channel, 
+  onClick 
+}: { 
+  channel: SearchChannelResult; 
+  onClick: () => void;
+}) {
+  const thumbnail = channel.thumbnail_url
+    .replace('{width}', '320')
+    .replace('{height}', '180');
+
+  return (
+    <div 
+      onClick={onClick}
+      className="group cursor-pointer rounded-lg overflow-hidden bg-twitch-gray hover:bg-gray-700 transition-colors"
+    >
+      <div className="relative aspect-video">
+        {channel.is_live ? (
+          <>
+            <img
+              src={thumbnail}
+              alt={channel.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute top-2 left-2 flex items-center gap-2">
+              <span className="px-2 py-0.5 text-xs font-bold bg-red-600 text-white rounded">LIVE</span>
+            </div>
+          </>
+        ) : (
+          <div className="w-full h-full bg-gray-700 flex items-center justify-center">
+            <span className="text-gray-400">Offline</span>
+          </div>
+        )}
+      </div>
+      <div className="p-3">
+        <h3 className="text-white font-medium line-clamp-2 group-hover:text-twitch-purple transition-colors">
+          {channel.display_name}
+        </h3>
+        <p className="text-gray-400 text-sm mt-1">
+          {channel.is_live ? channel.game_name : 'Last playing: ' + channel.game_name}
+        </p>
+        {channel.is_live && (
+          <p className="text-gray-500 text-sm line-clamp-1">{channel.title}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SearchCategoryCard({ 
+  category, 
+  onClick 
+}: { 
+  category: SearchCategoryResult; 
+  onClick: () => void;
+}) {
+  const thumbnail = category.box_art_url
+    .replace('{width}', '320')
+    .replace('{height}', '180');
+
+  return (
+    <div 
+      onClick={onClick}
+      className="group cursor-pointer rounded-lg overflow-hidden bg-twitch-gray hover:bg-gray-700 transition-colors"
+    >
+      <div className="relative aspect-video">
+        <img
+          src={thumbnail}
+          alt={category.name}
+          className="w-full h-full object-cover"
+        />
+      </div>
+      <div className="p-3">
+        <h3 className="text-white font-medium line-clamp-2 group-hover:text-twitch-purple transition-colors">
+          {category.name}
+        </h3>
+      </div>
     </div>
   );
 }

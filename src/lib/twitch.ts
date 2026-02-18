@@ -206,3 +206,71 @@ export async function getGames(
   const data = await twitchFetch<{ id: string; name: string; box_art_url: string }[]>('/games', options, params);
   return data;
 }
+
+export interface SearchChannelResult {
+  broadcaster_login: string;
+  display_name: string;
+  game_id: string;
+  game_name: string;
+  is_live: boolean;
+  tags_id: string[];
+  thumbnail_url: string;
+  title: string;
+}
+
+export interface SearchCategoryResult {
+  box_art_url: string;
+  id: string;
+  name: string;
+}
+
+export async function searchChannels(
+  query: string,
+  options: TwitchApiOptions,
+  limit: number = 25,
+  liveOnly: boolean = false
+): Promise<{ data: SearchChannelResult[]; pagination: string }> {
+  const params: Record<string, string | string[]> = {
+    query,
+    first: limit.toString(),
+  };
+  if (liveOnly) {
+    params.live_only = 'true';
+  }
+
+  const data = await twitchFetch<SearchChannelResult[]>('/search/channels', options, params);
+  const response = await fetch(`${TWITCH_API_BASE}/search/channels?${new URLSearchParams(params as Record<string, string>).toString()}`, {
+    headers: {
+      Authorization: `Bearer ${options.accessToken}`,
+      'Client-Id': options.clientId,
+    },
+  });
+  const json = await response.json();
+  return {
+    data: json.data || [],
+    pagination: json.pagination?.cursor || '',
+  };
+}
+
+export async function searchCategories(
+  query: string,
+  options: TwitchApiOptions,
+  limit: number = 25
+): Promise<{ data: SearchCategoryResult[]; pagination: string }> {
+  const params: Record<string, string> = {
+    query,
+    first: limit.toString(),
+  };
+
+  const response = await fetch(`${TWITCH_API_BASE}/search/categories?${new URLSearchParams(params).toString()}`, {
+    headers: {
+      Authorization: `Bearer ${options.accessToken}`,
+      'Client-Id': options.clientId,
+    },
+  });
+  const json = await response.json();
+  return {
+    data: json.data || [],
+    pagination: json.pagination?.cursor || '',
+  };
+}

@@ -1,8 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+
+interface FollowedChannel {
+  broadcaster_id: string;
+  broadcaster_login: string;
+  broadcaster_name: string;
+  profile_image_url: string;
+}
 
 interface TwitchUser {
   id: string;
@@ -13,12 +20,19 @@ interface TwitchUser {
 }
 
 interface HeaderProps {
-  onSearch?: (query: string) => void;
+  onSearch?: (query: string, type: 'channels' | 'categories') => void;
+  followedChannels?: FollowedChannel[];
+  searchType?: 'channels' | 'categories';
 }
 
-export function Header({ onSearch }: HeaderProps) {
+export function Header({ onSearch, followedChannels = [], searchType = 'channels' }: HeaderProps) {
   const [user, setUser] = useState<TwitchUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchTypeLocal, setSearchTypeLocal] = useState<'channels' | 'categories'>(searchType);
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [autocompleteResults, setAutocompleteResults] = useState<FollowedChannel[]>([]);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch('/api/auth/session')
@@ -32,12 +46,58 @@ export function Header({ onSearch }: HeaderProps) {
       });
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowAutocomplete(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (searchInput.length >= 3 && followedChannels.length > 0) {
+      const filtered = followedChannels.filter(channel =>
+        channel.broadcaster_name.toLowerCase().includes(searchInput.toLowerCase()) ||
+        channel.broadcaster_login.toLowerCase().includes(searchInput.toLowerCase())
+      ).slice(0, 5);
+      setAutocompleteResults(filtered);
+      setShowAutocomplete(filtered.length > 0);
+    } else {
+      setShowAutocomplete(false);
+    }
+  }, [searchInput, followedChannels]);
+
   const handleLogin = () => {
     window.location.href = '/api/auth/login';
   };
 
   const handleLogout = () => {
     window.location.href = '/api/auth/logout';
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchInput(e.target.value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setShowAutocomplete(false);
+      onSearch?.(searchInput, searchTypeLocal);
+    } else if (e.key === 'Escape') {
+      setShowAutocomplete(false);
+    }
+  };
+
+  const handleAutocompleteClick = (channel: FollowedChannel) => {
+    setSearchInput(channel.broadcaster_name);
+    setShowAutocomplete(false);
+    onSearch?.(channel.broadcaster_name, 'channels');
+  };
+
+  const handleSearchTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSearchTypeLocal(e.target.value as 'channels' | 'categories');
   };
 
   return (
@@ -52,13 +112,53 @@ export function Header({ onSearch }: HeaderProps) {
           <h1 className="text-xl font-bold text-white">TwitchTube</h1>
         </Link>
 
-        <div className="flex-1 max-w-md mx-8">
-          <input
-            type="text"
-            placeholder="Search streamers..."
-            onChange={(e) => onSearch?.(e.target.value)}
-            className="w-full px-4 py-2 bg-twitch-gray text-white rounded-lg border border-gray-700 focus:outline-none focus:border-twitch-purple placeholder-gray-500"
-          />
+        <div className="flex-1 max-w-xl mx-8 relative" ref={searchRef}>
+          <div className="flex">
+            <select
+              value={searchTypeLocal}
+              onChange={handleSearchTypeChange}
+              className="px-3 py-2 bg-twitch-gray text-white border border-gray-700 border-r-0 rounded-l-lg focus:outline-none text-sm"
+            >
+              <option value="channels">Channels</option>
+              <option value="categories">Categories</option>
+            </select>
+            <input
+              type="text"
+              placeholder={searchTypeLocal === 'channels' ? "Search channels..." : "Search categories..."}
+              value={searchInput}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              onFocus={() => {
+                if (searchInput.length >= 3 && autocompleteResults.length > 0) {
+                  setShowAutocomplete(true);
+                }
+              }}
+              className="flex-1 px-4 py-2 bg-twitch-gray text-white rounded-r-lg border border-gray-700 focus:outline-none focus:border-twitch-purple placeholder-gray-500"
+            />
+          </div>
+          
+          {showAutocomplete && autocompleteResults.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-twitch-gray border border-gray-700 rounded-lg shadow-lg overflow-hidden z-50">
+              {autocompleteResults.map(channel => (
+                <button
+                  key={channel.broadcaster_id}
+                  onClick={() => handleAutocompleteClick(channel)}
+                  className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-700 transition-colors text-left"
+                >
+                  {channel.profile_image_url && (
+                    <Image
+                      src={channel.profile_image_url}
+                      alt={channel.broadcaster_name}
+                      width={24}
+                      height={24}
+                      className="rounded-full"
+                    />
+                  )}
+                  <span className="text-white">{channel.broadcaster_name}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
