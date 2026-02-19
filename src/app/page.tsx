@@ -145,7 +145,7 @@ export default function Home() {
     isAuthenticated && followedData && !isSearching && !selectedCategory && !selectedChannel ? 
       `/api/videos?userId=${followedData.map(c => c.broadcaster_id).join(',')}&limit=25` : 
     isAuthenticated && selectedChannel ?
-      `/api/videos?userId=${selectedChannel.broadcaster_id}&limit=25` :
+      `/api/videos?login=${encodeURIComponent(selectedChannel.broadcaster_login)}&limit=25` :
       null,
     fetcher,
     { 
@@ -187,16 +187,23 @@ export default function Home() {
   }, [videos]);
 
   const loadMoreVideos = useCallback(async () => {
-    if (loadingMore || !hasMore || !followedData) return;
+    if (loadingMore || !hasMore) return;
+    if (!selectedChannel && !followedData) return;
     
     setLoadingMore(true);
     
     try {
       const cursorParam = encodeURIComponent(JSON.stringify(pagination));
-      const userId = selectedChannel ? selectedChannel.broadcaster_id : followedData.map(c => c.broadcaster_id).join(',');
-      const response = await fetch(
-        `/api/videos?userId=${userId}&limit=25&cursor=${cursorParam}`
-      );
+      let url: string;
+      
+      if (selectedChannel) {
+        url = `/api/videos?login=${encodeURIComponent(selectedChannel.broadcaster_login)}&limit=25&cursor=${cursorParam}`;
+      } else {
+        const userId = followedData!.map(c => c.broadcaster_id).join(',');
+        url = `/api/videos?userId=${userId}&limit=25&cursor=${cursorParam}`;
+      }
+      
+      const response = await fetch(url);
       
       if (response.ok) {
         const data: VideosResponse = await response.json();
@@ -242,32 +249,16 @@ export default function Home() {
     }
   }, []);
 
-  const handleSelectChannel = useCallback(async (channel: { broadcaster_id?: string; broadcaster_login: string; broadcaster_name: string }) => {
-    let broadcasterId = channel.broadcaster_id;
-    
-    if (!broadcasterId) {
-      try {
-        const response = await fetch(`/api/user?login=${encodeURIComponent(channel.broadcaster_login)}`);
-        if (response.ok) {
-          const userData = await response.json();
-          broadcasterId = userData.id;
-        }
-      } catch (error) {
-        console.error('Error resolving user ID:', error);
-      }
-    }
-    
-    if (broadcasterId) {
-      setSelectedChannel({
-        broadcaster_id: broadcasterId,
-        broadcaster_login: channel.broadcaster_login,
-        broadcaster_name: channel.broadcaster_name,
-      });
-      setIsSearching(false);
-      setSearchQuery('');
-      setSearchResults([]);
-      searchInputRef.current?.clear();
-    }
+  const handleSelectChannel = useCallback((channel: { broadcaster_login: string; broadcaster_name: string }) => {
+    setSelectedChannel({
+      broadcaster_id: '',
+      broadcaster_login: channel.broadcaster_login,
+      broadcaster_name: channel.broadcaster_name,
+    });
+    setIsSearching(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    searchInputRef.current?.clear();
   }, []);
 
   const handleSelectCategory = useCallback((categoryName: string) => {
@@ -451,7 +442,6 @@ export default function Home() {
                       key={channel.broadcaster_id} 
                       channel={channel} 
                       onClick={() => handleSelectChannel({ 
-                        broadcaster_id: channel.broadcaster_id, 
                         broadcaster_login: channel.broadcaster_login,
                         broadcaster_name: channel.display_name 
                       })}

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAccessToken, getAuthState } from '@/lib/auth';
-import { getVideos } from '@/lib/twitch';
+import { getVideos, getUsers } from '@/lib/twitch';
 import { CACHE_TTL, getCached } from '@/lib/redis';
 
 export async function GET(request: Request) {
@@ -17,14 +17,27 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const userIdsParam = searchParams.get('userId');
+  const loginParam = searchParams.get('login');
   const cursorParam = searchParams.get('cursor');
   const limit = parseInt(searchParams.get('limit') || '25', 10);
   
-  if (!userIdsParam) {
-    return NextResponse.json({ error: 'userId is required' }, { status: 400 });
+  let userIds: string[] = [];
+  
+  if (userIdsParam) {
+    userIds = userIdsParam.split(',');
+  } else if (loginParam) {
+    const users = await getUsers([loginParam], {
+      accessToken,
+      clientId: process.env.TWITCH_CLIENT_ID || '',
+    }, 'login');
+    
+    if (users.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    userIds = [users[0].id];
+  } else {
+    return NextResponse.json({ error: 'userId or login is required' }, { status: 400 });
   }
-
-  const userIds = userIdsParam.split(',');
 
   let paginationCursors: Record<string, string> | undefined;
   
