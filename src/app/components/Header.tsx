@@ -222,4 +222,4 @@ export const Header = forwardRef<{ clear: () => void }, HeaderProps>(function He
       </div>
     </header>
   );
-}
+});

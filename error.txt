@@ -1,42 +1,45 @@
-14:26:57.728 Running build in Portland, USA (West) – pdx1
-14:26:57.728 Build machine configuration: 2 cores, 8 GB
-14:26:57.839 Cloning github.com/Signal-Six/TwitchTube (Branch: main, Commit: 5521a11)
-14:26:58.514 Cloning completed: 675.000ms
-14:26:59.012 Restored build cache from previous deployment (7Ufmo2LJAfxkErKxnnKhhRKrqddP)
-14:26:59.268 Running "vercel build"
-14:26:59.786 Vercel CLI 50.18.2
-14:27:00.041 Installing dependencies...
-14:27:01.160 
-14:27:01.161 up to date in 920ms
-14:27:01.162 
-14:27:01.162 150 packages are looking for funding
-14:27:01.162   run `npm fund` for details
-14:27:01.188 Detected Next.js version: 14.2.3
-14:27:01.192 Running "npm run build"
-14:27:01.280 
-14:27:01.281 > twitchtube@1.0.0 build
-14:27:01.281 > next build
-14:27:01.281 
-14:27:01.911   ▲ Next.js 14.2.3
-14:27:01.911 
-14:27:01.928    Creating an optimized production build ...
-14:27:07.754  ✓ Compiled successfully
-14:27:07.755    Linting and checking validity of types ...
-14:27:10.707 Failed to compile.
-14:27:10.707 
-14:27:10.708 ./src/app/page.tsx:318:17
-14:27:10.709 Type error: Type 'import("/vercel/path0/src/types/index").FollowedChannel[] | undefined' is not assignable to type 'FollowedChannel[] | undefined'.
-14:27:10.709   Type 'import("/vercel/path0/src/types/index").FollowedChannel[]' is not assignable to type 'FollowedChannel[]'.
-14:27:10.709     Type 'import("/vercel/path0/src/types/index").FollowedChannel' is not assignable to type 'FollowedChannel'.
-14:27:10.709       Types of property 'profile_image_url' are incompatible.
-14:27:10.709         Type 'string | undefined' is not assignable to type 'string'.
-14:27:10.709           Type 'undefined' is not assignable to type 'string'.
-14:27:10.709 
-14:27:10.710 [0m [90m 316 |[39m     [36mreturn[39m ([0m
-14:27:10.710 [0m [90m 317 |[39m       [33m<[39m[33mdiv[39m className[33m=[39m[32m"min-h-screen bg-twitch-dark"[39m[33m>[39m[0m
-14:27:10.710 [0m[31m[1m>[22m[39m[90m 318 |[39m         [33m<[39m[33mHeader[39m followedChannels[33m=[39m{followedData} [33m/[39m[33m>[39m[0m
-14:27:10.710 [0m [90m     |[39m                 [31m[1m^[22m[39m[0m
-14:27:10.710 [0m [90m 319 |[39m         [33m<[39m[33mdiv[39m className[33m=[39m[32m"flex flex-col items-center justify-center min-h-[calc(100vh-80px)] px-4"[39m[33m>[39m[0m
-14:27:10.710 [0m [90m 320 |[39m           [33m<[39m[33mdiv[39m className[33m=[39m[32m"text-center max-w-lg"[39m[33m>[39m[0m
-14:27:10.711 [0m [90m 321 |[39m             [33m<[39m[33mh1[39m className[33m=[39m[32m"text-4xl font-bold text-white mb-4"[39m[33m>[39m[33mWelcome[39m to [33mTwitchTube[39m[33m<[39m[33m/[39m[33mh1[39m[33m>[39m[0m
-14:27:10.759 Error: Command "npm run build" exited with 1
+11:52:18.419 Running build in Portland, USA (West) – pdx1
+11:52:18.420 Build machine configuration: 2 cores, 8 GB
+11:52:18.607 Cloning github.com/Signal-Six/TwitchTube (Branch: main, Commit: a9fc60b)
+11:52:19.461 Cloning completed: 853.000ms
+11:52:19.893 Restored build cache from previous deployment (9siDupjKaYYsGZ3gFMiCBDK1ta82)
+11:52:20.207 Running "vercel build"
+11:52:20.757 Vercel CLI 50.18.2
+11:52:21.081 Installing dependencies...
+11:52:22.182 
+11:52:22.183 up to date in 882ms
+11:52:22.183 
+11:52:22.184 150 packages are looking for funding
+11:52:22.184   run `npm fund` for details
+11:52:22.211 Detected Next.js version: 14.2.3
+11:52:22.215 Running "npm run build"
+11:52:22.306 
+11:52:22.307 > twitchtube@1.0.0 build
+11:52:22.307 > next build
+11:52:22.307 
+11:52:22.953   ▲ Next.js 14.2.3
+11:52:22.954 
+11:52:23.059    Creating an optimized production build ...
+11:52:25.379 Failed to compile.
+11:52:25.380 
+11:52:25.380 ./src/app/components/Header.tsx
+11:52:25.381 Error: 
+11:52:25.381   [31mx[0m Unexpected eof
+11:52:25.381      ,-[[36;1;4m/vercel/path0/src/app/components/Header.tsx[0m:222:1]
+11:52:25.381  [2m222[0m |       </div>
+11:52:25.381  [2m223[0m |     </header>
+11:52:25.381  [2m224[0m |   );
+11:52:25.381  [2m225[0m | }
+11:52:25.381      : [31;1m ^[0m
+11:52:25.382      `----
+11:52:25.382 
+11:52:25.382 Caused by:
+11:52:25.382     Syntax Error
+11:52:25.382 
+11:52:25.382 Import trace for requested module:
+11:52:25.382 ./src/app/components/Header.tsx
+11:52:25.382 ./src/app/page.tsx
+11:52:25.383 
+11:52:25.394 
+11:52:25.394 > Build failed because of webpack errors
+11:52:25.417 Error: Command "npm run build" exited with 1
