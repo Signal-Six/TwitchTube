@@ -242,12 +242,32 @@ export default function Home() {
     }
   }, []);
 
-  const handleSelectChannel = useCallback((channel: { broadcaster_id: string; broadcaster_login: string; broadcaster_name: string }) => {
-    setSelectedChannel(channel);
-    setIsSearching(false);
-    setSearchQuery('');
-    setSearchResults([]);
-    searchInputRef.current?.clear();
+  const handleSelectChannel = useCallback(async (channel: { broadcaster_id?: string; broadcaster_login: string; broadcaster_name: string }) => {
+    let broadcasterId = channel.broadcaster_id;
+    
+    if (!broadcasterId) {
+      try {
+        const response = await fetch(`/api/user?login=${encodeURIComponent(channel.broadcaster_login)}`);
+        if (response.ok) {
+          const userData = await response.json();
+          broadcasterId = userData.id;
+        }
+      } catch (error) {
+        console.error('Error resolving user ID:', error);
+      }
+    }
+    
+    if (broadcasterId) {
+      setSelectedChannel({
+        broadcaster_id: broadcasterId,
+        broadcaster_login: channel.broadcaster_login,
+        broadcaster_name: channel.broadcaster_name,
+      });
+      setIsSearching(false);
+      setSearchQuery('');
+      setSearchResults([]);
+      searchInputRef.current?.clear();
+    }
   }, []);
 
   const handleSelectCategory = useCallback((categoryName: string) => {
@@ -557,16 +577,23 @@ function SearchChannelCard({
           </div>
         )}
       </div>
-      <div className="p-3">
-        <h3 className="text-white font-medium line-clamp-2 group-hover:text-twitch-purple transition-colors">
-          {channel.display_name}
-        </h3>
-        <p className="text-gray-400 text-sm mt-1">
-          {channel.is_live ? channel.game_name : 'Last playing: ' + channel.game_name}
-        </p>
-        {channel.is_live && (
-          <p className="text-gray-500 text-sm line-clamp-1">{channel.title}</p>
-        )}
+      <div className="p-3 flex items-start gap-3">
+        <img
+          src={thumbnail.replace('320', '70').replace('180', '70')}
+          alt={channel.display_name}
+          className="w-10 h-10 rounded-full object-cover flex-shrink-0 mt-1"
+        />
+        <div className="min-w-0">
+          <h3 className="text-white font-medium line-clamp-2 group-hover:text-twitch-purple transition-colors">
+            {channel.display_name}
+          </h3>
+          <p className="text-gray-400 text-sm mt-1">
+            {channel.is_live ? channel.game_name : 'Last playing: ' + channel.game_name}
+          </p>
+          {channel.is_live && (
+            <p className="text-gray-500 text-sm line-clamp-1">{channel.title}</p>
+          )}
+        </div>
       </div>
     </div>
   );

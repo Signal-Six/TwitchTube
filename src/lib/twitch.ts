@@ -182,14 +182,19 @@ export async function getVideos(
 }
 
 export async function getUsers(
-  userIds: string[],
-  options: TwitchApiOptions
+  identifiers: string[],
+  options: TwitchApiOptions,
+  type: 'id' | 'login' = 'id'
 ): Promise<{ id: string; login: string; display_name: string; profile_image_url: string }[]> {
-  if (userIds.length === 0) return [];
+  if (identifiers.length === 0) return [];
   
   const params: Record<string, string> = {};
-  userIds.forEach(id => params.user_id = id);
-
+  if (type === 'id') {
+    identifiers.forEach(id => params.user_id = id);
+  } else {
+    identifiers.forEach(login => params.login = login);
+  }
+  
   const data = await twitchFetch<{ id: string; login: string; display_name: string; profile_image_url: string }[]>('/users', options, params);
   return data;
 }
