@@ -109,6 +109,12 @@ export default function Home() {
   const [searchHasMore, setSearchHasMore] = useState(true);
   const [searchLoadingMore, setSearchLoadingMore] = useState(false);
   
+  // Selected channel state (for filtering by specific channel)
+  const [selectedChannel, setSelectedChannel] = useState<{ broadcaster_id: string; broadcaster_login: string; broadcaster_name: string } | null>(null);
+  
+  // Ref for Header search input
+  const searchInputRef = useRef<{ clear: () => void } | null>(null);
+  
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -136,8 +142,10 @@ export default function Home() {
   );
 
   const { data: initialVideosData, error: videosError } = useSWR<VideosResponse>(
-    isAuthenticated && followedData && !isSearching ? 
+    isAuthenticated && followedData && !isSearching && !selectedCategory && !selectedChannel ? 
       `/api/videos?userId=${followedData.map(c => c.broadcaster_id).join(',')}&limit=25` : 
+    isAuthenticated && selectedChannel ?
+      `/api/videos?userId=${selectedChannel.broadcaster_id}&limit=25` :
       null,
     fetcher,
     { 
@@ -185,8 +193,9 @@ export default function Home() {
     
     try {
       const cursorParam = encodeURIComponent(JSON.stringify(pagination));
+      const userId = selectedChannel ? selectedChannel.broadcaster_id : followedData.map(c => c.broadcaster_id).join(',');
       const response = await fetch(
-        `/api/videos?userId=${followedData.map(c => c.broadcaster_id).join(',')}&limit=25&cursor=${cursorParam}`
+        `/api/videos?userId=${userId}&limit=25&cursor=${cursorParam}`
       );
       
       if (response.ok) {
@@ -204,7 +213,7 @@ export default function Home() {
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, hasMore, pagination, followedData]);
+  }, [loadingMore, hasMore, pagination, followedData, selectedChannel]);
 
   const handleSearch = useCallback(async (query: string, type: 'channels' | 'categories') => {
     if (!query.trim()) return;
@@ -215,6 +224,7 @@ export default function Home() {
     setSearchResults([]);
     setSearchPagination('');
     setSearchHasMore(true);
+    setSelectedChannel(null);
     
     try {
       const response = await fetch(
@@ -230,6 +240,22 @@ export default function Home() {
     } catch (error) {
       console.error('Search error:', error);
     }
+  }, []);
+
+  const handleSelectChannel = useCallback((channel: { broadcaster_id: string; broadcaster_login: string; broadcaster_name: string }) => {
+    setSelectedChannel(channel);
+    setIsSearching(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    searchInputRef.current?.clear();
+  }, []);
+
+  const handleSelectCategory = useCallback((categoryName: string) => {
+    setSelectedCategory(categoryName);
+    setIsSearching(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    searchInputRef.current?.clear();
   }, []);
 
   const loadMoreSearchResults = useCallback(async () => {
@@ -260,6 +286,8 @@ export default function Home() {
     setSearchQuery('');
     setSearchResults([]);
     setSearchPagination('');
+    setSelectedChannel(null);
+    searchInputRef.current?.clear();
   }, []);
 
   useEffect(() => {
@@ -368,9 +396,10 @@ export default function Home() {
         onSearch={handleSearch} 
         followedChannels={followedData}
         searchType={searchType}
+        searchInputRef={searchInputRef}
       />
       
-      {isSearching ? (
+      {isSearching || selectedChannel ? (
         <div className="p-6">
           <div className="flex items-center gap-4 mb-4">
             <button
@@ -379,38 +408,52 @@ export default function Home() {
             >
               ← Back to Followed
             </button>
-            <h2 className="text-xl font-bold text-white">
-              Search Results for "{searchQuery}" 
-              <span className="text-gray-400 text-base font-normal ml-2">
-                ({searchType === 'channels' ? 'Channels' : 'Categories'})
-              </span>
-            </h2>
+            {selectedChannel ? (
+              <h2 className="text-xl font-bold text-white">
+                {selectedChannel.broadcaster_name}'s Content
+              </h2>
+            ) : (
+              <h2 className="text-xl font-bold text-white">
+                Search Results for "{searchQuery}" 
+                <span className="text-gray-400 text-base font-normal ml-2">
+                  ({searchType === 'channels' ? 'Channels' : 'Categories'})
+                </span>
+              </h2>
+            )}
           </div>
           
-          {searchType === 'channels' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {(searchResults as SearchChannelResult[]).map(channel => (
-                <SearchChannelCard 
-                  key={channel.broadcaster_id} 
-                  channel={channel} 
-                  onClick={() => handleSearch(channel.display_name, 'channels')}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {(searchResults as SearchCategoryResult[]).map(category => (
-                <SearchCategoryCard 
-                  key={category.id} 
-                  category={category} 
-                  onClick={() => handleSearch(category.name, 'categories')}
-                />
-              ))}
-            </div>
-          )}
-          
-          {searchResults.length === 0 && (
-            <div className="text-gray-400 text-center py-8">No results found</div>
+          {isSearching && (
+            <>
+              {searchType === 'channels' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {(searchResults as SearchChannelResult[]).map(channel => (
+                    <SearchChannelCard 
+                      key={channel.broadcaster_id} 
+                      channel={channel} 
+                      onClick={() => handleSelectChannel({ 
+                        broadcaster_id: channel.broadcaster_id, 
+                        broadcaster_login: channel.broadcaster_login,
+                        broadcaster_name: channel.display_name 
+                      })}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {(searchResults as SearchCategoryResult[]).map(category => (
+                    <SearchCategoryCard 
+                      key={category.id} 
+                      category={category} 
+                      onClick={() => handleSelectCategory(category.name)}
+                    />
+                  ))}
+                </div>
+              )}
+              
+              {searchResults.length === 0 && (
+                <div className="text-gray-400 text-center py-8">No results found</div>
+              )}
+            </>
           )}
         </div>
       ) : (

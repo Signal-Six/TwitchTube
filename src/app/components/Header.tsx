@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -23,9 +23,10 @@ interface HeaderProps {
   onSearch?: (query: string, type: 'channels' | 'categories') => void;
   followedChannels?: FollowedChannel[];
   searchType?: 'channels' | 'categories';
+  searchInputRef?: React.MutableRefObject<{ clear: () => void } | null>;
 }
 
-export function Header({ onSearch, followedChannels = [], searchType = 'channels' }: HeaderProps) {
+export const Header = forwardRef<{ clear: () => void }, HeaderProps>(function Header({ onSearch, followedChannels = [], searchType = 'channels', searchInputRef }, ref) {
   const [user, setUser] = useState<TwitchUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState('');
@@ -33,6 +34,29 @@ export function Header({ onSearch, followedChannels = [], searchType = 'channels
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteResults, setAutocompleteResults] = useState<FollowedChannel[]>([]);
   const searchRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    clear: () => {
+      setSearchInput('');
+      if (inputRef.current) {
+        inputRef.current.value = '';
+      }
+    }
+  }));
+
+  useEffect(() => {
+    if (searchInputRef) {
+      searchInputRef.current = {
+        clear: () => {
+          setSearchInput('');
+          if (inputRef.current) {
+            inputRef.current.value = '';
+          }
+        }
+      };
+    }
+  }, [searchInputRef]);
 
   useEffect(() => {
     fetch('/api/auth/session')
@@ -123,6 +147,7 @@ export function Header({ onSearch, followedChannels = [], searchType = 'channels
               <option value="categories">Categories</option>
             </select>
             <input
+              ref={inputRef}
               type="text"
               placeholder={searchTypeLocal === 'channels' ? "Search channels..." : "Search categories..."}
               value={searchInput}
