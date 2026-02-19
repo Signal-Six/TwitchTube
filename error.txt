@@ -1,1 +1,15 @@
-/api/user?login=cvnka:1  Failed to load resource: the server responded with a status of 404 ()
+page-e91908ffd570f3e1.js:1 
+ GET https://twitch-tube.vercel.app/api/user?login=cvnka 404 (Not Found)
+(anonymous)	@	page-e91908ffd570f3e1.js:1
+onClick	@	page-e91908ffd570f3e1.js:1
+a_	@	fd9d1056-714829f3db873f61.js:1
+aR	@	fd9d1056-714829f3db873f61.js:1
+(anonymous)	@	fd9d1056-714829f3db873f61.js:1
+sF	@	fd9d1056-714829f3db873f61.js:1
+sM	@	fd9d1056-714829f3db873f61.js:1
+(anonymous)	@	fd9d1056-714829f3db873f61.js:1
+o4	@	fd9d1056-714829f3db873f61.js:1
+iV	@	fd9d1056-714829f3db873f61.js:1
+sU	@	fd9d1056-714829f3db873f61.js:1
+uR	@	fd9d1056-714829f3db873f61.js:1
+uM	@	fd9d1056-714829f3db873f61.js:1

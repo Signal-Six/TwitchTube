@@ -111,6 +111,7 @@ export default function Home() {
   
   // Selected channel state (for filtering by specific channel)
   const [selectedChannel, setSelectedChannel] = useState<{ broadcaster_id: string; broadcaster_login: string; broadcaster_name: string } | null>(null);
+  const [selectedChannelStream, setSelectedChannelStream] = useState<TwitchStream | null>(null);
   
   // Ref for Header search input
   const searchInputRef = useRef<{ clear: () => void } | null>(null);
@@ -136,9 +137,23 @@ export default function Home() {
   );
 
   const { data: streamsData, error: streamsError } = useSWR<TwitchStream[]>(
-    isAuthenticated ? '/api/streams' : null,
+    isAuthenticated && !selectedChannel ? '/api/streams' : null,
     fetcher,
     { refreshInterval: 30000, revalidateOnFocus: false }
+  );
+
+  const { data: selectedChannelStreamData } = useSWR<{ stream: TwitchStream | null }>(
+    isAuthenticated && selectedChannel ? 
+      `/api/streams/channel?login=${encodeURIComponent(selectedChannel.broadcaster_login)}` : 
+      null,
+    fetcher,
+    { 
+      refreshInterval: 30000, 
+      revalidateOnFocus: false,
+      onSuccess: (data) => {
+        setSelectedChannelStream(data.stream);
+      }
+    }
   );
 
   const { data: initialVideosData, error: videosError } = useSWR<VideosResponse>(
@@ -255,6 +270,10 @@ export default function Home() {
       broadcaster_login: channel.broadcaster_login,
       broadcaster_name: channel.broadcaster_name,
     });
+    setSelectedChannelStream(null);
+    setVideos([]);
+    setPagination({});
+    setHasMore(true);
     setIsSearching(false);
     setSearchQuery('');
     setSearchResults([]);
@@ -298,6 +317,10 @@ export default function Home() {
     setSearchResults([]);
     setSearchPagination('');
     setSelectedChannel(null);
+    setSelectedChannelStream(null);
+    setVideos([]);
+    setPagination({});
+    setHasMore(true);
     searchInputRef.current?.clear();
   }, []);
 
@@ -433,7 +456,7 @@ export default function Home() {
             )}
           </div>
           
-          {isSearching && (
+          {isSearching ? (
             <>
               {searchType === 'channels' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -464,7 +487,14 @@ export default function Home() {
                 <div className="text-gray-400 text-center py-8">No results found</div>
               )}
             </>
-          )}
+          ) : selectedChannel ? (
+            <StreamGrid
+              liveStreams={selectedChannelStream ? [selectedChannelStream] : []}
+              videos={videosWithProgress}
+              selectedCategory={null}
+              onVideoClick={handleVideoClick}
+            />
+          ) : (
         </div>
       ) : (
         <>
