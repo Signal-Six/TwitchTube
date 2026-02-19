@@ -487,14 +487,14 @@ export default function Home() {
                 <div className="text-gray-400 text-center py-8">No results found</div>
               )}
             </>
-          ) : selectedChannel ? (
+          ) : (
             <StreamGrid
               liveStreams={selectedChannelStream ? [selectedChannelStream] : []}
               videos={videosWithProgress}
               selectedCategory={null}
               onVideoClick={handleVideoClick}
             />
-          ) : (
+          )}
         </div>
       ) : (
         <>

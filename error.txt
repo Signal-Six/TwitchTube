@@ -1,15 +1,47 @@
-page-e91908ffd570f3e1.js:1 
- GET https://twitch-tube.vercel.app/api/user?login=cvnka 404 (Not Found)
-(anonymous)	@	page-e91908ffd570f3e1.js:1
-onClick	@	page-e91908ffd570f3e1.js:1
-a_	@	fd9d1056-714829f3db873f61.js:1
-aR	@	fd9d1056-714829f3db873f61.js:1
-(anonymous)	@	fd9d1056-714829f3db873f61.js:1
-sF	@	fd9d1056-714829f3db873f61.js:1
-sM	@	fd9d1056-714829f3db873f61.js:1
-(anonymous)	@	fd9d1056-714829f3db873f61.js:1
-o4	@	fd9d1056-714829f3db873f61.js:1
-iV	@	fd9d1056-714829f3db873f61.js:1
-sU	@	fd9d1056-714829f3db873f61.js:1
-uR	@	fd9d1056-714829f3db873f61.js:1
-uM	@	fd9d1056-714829f3db873f61.js:1
+16:36:42.509 Running build in Portland, USA (West) – pdx1
+16:36:42.510 Build machine configuration: 2 cores, 8 GB
+16:36:42.656 Cloning github.com/Signal-Six/TwitchTube (Branch: main, Commit: 7b399ec)
+16:36:43.137 Cloning completed: 481.000ms
+16:36:44.515 Restored build cache from previous deployment (9fcFy2RYREpiJvTpKXToSgw8v4B2)
+16:36:44.777 Running "vercel build"
+16:36:45.322 Vercel CLI 50.18.2
+16:36:45.610 Installing dependencies...
+16:36:48.500 
+16:36:48.501 up to date in 3s
+16:36:48.501 
+16:36:48.502 150 packages are looking for funding
+16:36:48.502   run `npm fund` for details
+16:36:48.531 Detected Next.js version: 14.2.3
+16:36:48.536 Running "npm run build"
+16:36:48.638 
+16:36:48.638 > twitchtube@1.0.0 build
+16:36:48.639 > next build
+16:36:48.639 
+16:36:49.324   ▲ Next.js 14.2.3
+16:36:49.325 
+16:36:49.342    Creating an optimized production build ...
+16:36:51.445 Failed to compile.
+16:36:51.445 
+16:36:51.445 ./src/app/page.tsx
+16:36:51.446 Error: 
+16:36:51.446   [31mx[0m Unexpected token `div`. Expected jsx identifier
+16:36:51.446      ,-[[36;1;4m/vercel/path0/src/app/page.tsx[0m:425:1]
+16:36:51.446  [2m425[0m |   }
+16:36:51.446  [2m426[0m | 
+16:36:51.446  [2m427[0m |   return (
+16:36:51.446  [2m428[0m |     <div className="min-h-screen bg-twitch-dark">
+16:36:51.446      : [31;1m     ^^^[0m
+16:36:51.446  [2m429[0m |       <Header 
+16:36:51.446  [2m430[0m |         onSearch={handleSearch} 
+16:36:51.447  [2m431[0m |         followedChannels={followedData}
+16:36:51.447      `----
+16:36:51.447 
+16:36:51.447 Caused by:
+16:36:51.447     Syntax Error
+16:36:51.447 
+16:36:51.447 Import trace for requested module:
+16:36:51.447 ./src/app/page.tsx
+16:36:51.447 
+16:36:51.459 
+16:36:51.460 > Build failed because of webpack errors
+16:36:51.484 Error: Command "npm run build" exited with 1
